@@ -1,0 +1,60 @@
+-- فروشنده‌ها
+CREATE TABLE sellers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    telegram_id INTEGER UNIQUE,
+    name TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- دسته‌بندی‌ها
+CREATE TABLE categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE
+);
+
+-- محصولات
+CREATE TABLE products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_id INTEGER,
+    category_id INTEGER,
+    title TEXT,
+    description TEXT,
+    price REAL,
+    code TEXT UNIQUE,
+    stock INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (seller_id) REFERENCES sellers(id),
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+-- خریدارها
+CREATE TABLE buyers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    telegram_id INTEGER UNIQUE,
+    name TEXT,
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- سفارش‌ها
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    buyer_id INTEGER,
+    product_id INTEGER,
+    quantity INTEGER DEFAULT 1,
+    total_price REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (buyer_id) REFERENCES buyers(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- اشتراک فروشنده‌ها
+CREATE TABLE subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_id INTEGER,
+    plan_name TEXT,
+    price REAL,
+    start_date DATETIME,
+    end_date DATETIME,
+    active INTEGER DEFAULT 1,
+    FOREIGN KEY (seller_id) REFERENCES sellers(id)
+);
