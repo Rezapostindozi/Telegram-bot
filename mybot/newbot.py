@@ -4,7 +4,7 @@ from django.contrib.messages.context_processors import messages
 from telebot.types import InlineKeyboardButton , InlineKeyboardMarkup , ReplyKeyboardMarkup , KeyboardButton
 import datetime
 import sqlite3
-from dataset import init_db, get_db_connection  # ایمپورت توابع دیتابیس
+from dataset import init_db, get_db_connection , save_user # ایمپورت توابع دیتابیس
 
 # ساخت دیتابیس موقع اجرای ربات (یک بار فقط)
 init_db()
@@ -44,11 +44,16 @@ def check_subscription(chat_id):
 @bot.message_handler(func=lambda msg : msg.text in ["🛒 من خریدار هستم", "🧾 من فروشنده هستم"])
 def shenasaii_user (message):
     chat_id = message.chat.id
+    full_name = message.from_user.full_name
+    username = message.from_user.username
+
     if "خریدار" in message.text :
         user_roles[chat_id] = "buyer"
+        save_user(chat_id,full_name ,username,"buyer" )
         buyer_menu(chat_id)
     else:
         user_roles[chat_id] = "seller"
+        save_user(chat_id , full_name,username , "seller")
         if check_subscription(chat_id):
             seller_menu(chat_id)
         else:

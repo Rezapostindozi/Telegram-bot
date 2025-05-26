@@ -10,6 +10,18 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # جدول کاربران
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            full_name TEXT,
+            role TEXT CHECK(role IN ('buyer', 'seller')) NOT NULL,
+            joined_at TEXT,
+            subscription_status TEXT DEFAULT 'inactive'
+        )
+    """)
+
     # جدول محصولات
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS products (
@@ -24,7 +36,7 @@ def init_db():
         )
     """)
 
-    # جدول اشتراک کاربران فروشنده
+    # جدول اشتراک
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS subscriptions (
             user_id INTEGER PRIMARY KEY,
@@ -34,5 +46,15 @@ def init_db():
         )
     """)
 
+    conn.commit()
+    conn.close()
+
+def save_user(user_id, full_name, username, role):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO users (user_id, full_name, username, role, joined_at)
+        VALUES (?, ?, ?, ?, ?)
+    """, (user_id, full_name, username, role, datetime.datetime.now().isoformat()))
     conn.commit()
     conn.close()
