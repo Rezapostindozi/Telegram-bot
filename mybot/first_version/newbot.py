@@ -1,6 +1,5 @@
 import pandas as pd
 import telebot
-from django.contrib.messages.context_processors import messages
 from telebot.types import InlineKeyboardButton , InlineKeyboardMarkup , ReplyKeyboardMarkup , KeyboardButton
 import datetime
 import sqlite3
@@ -74,17 +73,21 @@ def buyer_menu(chat_id):
     bot.send_message(chat_id, "📋 منوی خریدار:", reply_markup=markup)
 
 def seller_menu(chat_id):
+    if not check_subscription(chat_id):
+        limited_seller_menu(chat_id)
+        return
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 =KeyboardButton("مشاهده محصولات ")
     btn2 =KeyboardButton("حذف محصول ")
     btn3 =KeyboardButton("مشاهده سفارشات ")
     btn4 =KeyboardButton("بازگشت به خانه ")
     btn5 =KeyboardButton("افزودن محصولات ")
+    btn6 = KeyboardButton("مدیریت اشتراک")
 
     markup.add(btn1 , btn5)
     markup.add(btn2)
     markup.add(btn3)
-    markup.add(btn4)
+    markup.add(btn4 , btn6)
 
     bot.send_message(chat_id, "📋 منوی فروشنده:", reply_markup=markup)
 
@@ -110,6 +113,11 @@ def back_to_home(message):
 
 @bot.message_handler(func=lambda m: user_roles.get(m.chat.id)=="seller"and m.text =="افزودن محصولات")
 def start_add_product(message):
+    chat_id = message.chat.id
+    if not check_subscription(chat_id):  # ✅ اضافه کن
+        bot.send_message(chat_id, "⛔️ اشتراک شما منقضی شده. لطفاً ابتدا اشتراک تهیه کنید.")
+        limited_seller_menu(chat_id)
+        return
     chat_id =message.chat.id
     user_states[chat_id] ="awaiting_name"
     bot.send_message(chat_id,"Please Enter product name ")
@@ -198,6 +206,7 @@ def product_photo(message):
     if user_states.get(chat_id, {}).get('step')=="awaiting_image":
         file_id = message.photo[-1].file_id
         user_states[chat_id]['image']=file_id
+    bot.send_message(chat_id , "محصول ثبت شد ")
     # حالا همه اطلاعات رو داریم، می‌تونیم ذخیره کنیم
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -313,6 +322,54 @@ def subscribe_handler(message):
 def buy_subscription(message):
     bot.send_message(message.chat.id, "برای خرید اشتراک لطفاً دستور /subscribe را ارسال کنید.")
 #______________________________________________________________________________________________________
+@bot.message_handler(func=lambda m: m.text == "مدیریت اشتراک")
+def manage_subscription(message):
+    chat_id = message.chat.id
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(
+        KeyboardButton("📅 اشتراک ۱ ماهه"),
+        KeyboardButton("📅 اشتراک ۳ ماهه")
+    )
+    markup.add(
+        KeyboardButton("📅 اشتراک ۶ ماهه"),
+        KeyboardButton("📅 اشتراک ۱۲ ماهه")
+    )
+    markup.add(KeyboardButton("بازگشت به خانه"))
+
+    bot.send_message(chat_id, "مدت زمان اشتراک مورد نظر را انتخاب کنید:", reply_markup=markup)
+
+
+@bot.message_handler(func=lambda m: m.text.startswith("📅 اشتراک"))
+def handle_subscription_choice(message):
+    chat_id = message.chat.id
+    text = message.text
+
+    # تعیین تعداد روزها بر اساس انتخاب کاربر
+    days = 30
+    if "۳ ماهه" in text:
+        days = 90
+    elif "۶ ماهه" in text:
+        days = 180
+    elif "۱۲ ماهه" in text:
+        days = 365
+
+    expires = datetime.datetime.now() + datetime.timedelta(days=days)
+
+    # ذخیره در دیتابیس
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO subscriptions (user_id, is_active, expires_at, plan)
+        VALUES (?, ?, ?, ?)
+    """, (chat_id, 1, expires.isoformat(), f"{days}-day"))
+    conn.commit()
+    conn.close()
+
+    bot.send_message(chat_id, f"✅ اشتراک شما برای مدت {days} روز فعال شد (تا {expires.strftime('%Y-%m-%d')})")
+    seller_menu(chat_id)  # برگشت به منوی فروشنده
+
+
+
 
 
 print("Bot is Running ...")
