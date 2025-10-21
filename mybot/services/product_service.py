@@ -45,7 +45,6 @@ def get_categories():
     rows = cursor.fetchall()
     conn.close()
     return [row["category"] for row in rows]
-# services/product_service.py
 
 def delete_product(product_id):
     conn = get_db_connection()
@@ -60,7 +59,6 @@ def update_product(product_id, name=None, code=None, price=None, stock=None, cat
     """
     conn = get_db_connection()
     cursor = conn.cursor()
-    # مثال: ویرایش نام و قیمت
     if name is not None:
         cursor.execute("UPDATE products SET name = ? WHERE id = ?", (name, product_id))
     if code is not None:
