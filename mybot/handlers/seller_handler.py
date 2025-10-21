@@ -3,10 +3,7 @@ from telebot import TeleBot
 from mybot.services.subscription_service import check_subscription
 
 def seller_menu(bot: TeleBot, chat_id):
-    """
-    نمایش منوی کامل فروشنده.
-    """
-    # بررسی اشتراک
+
     if not check_subscription(chat_id):
         limited_seller_menu(bot, chat_id)
         return
